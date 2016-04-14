@@ -5,8 +5,8 @@ configurations {
 }
 
 dependencies {
-    compile rootProject.ext.lintapi
-    compile rootProject.ext.lintchecks
+    compile "com.android.tools.lint:lint-api:$lintapiVersion"
+    compile "com.android.tools.lint:lint-checks:$lintapiVersion"
 
     lintChecks files(jar)
 }

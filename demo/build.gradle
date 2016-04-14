@@ -36,10 +36,10 @@ android {
 }
 
 dependencies {
-    compile rootProject.ext.supportV4
-    compile rootProject.ext.supportDesign
+    compile "com.android.support:support-v4:$supportVersion"
+    compile "com.android.support:design:$supportVersion"
 
-    compile rootProject.ext.butterknife
+    compile "com.jakewharton:butterknife:$butterknifeVersion"
 
     compile 'com.bluelinelabs:conductor:' + rootProject.ext.publishedVersionName
     compile 'com.bluelinelabs:conductor-support:' + rootProject.ext.publishedVersionName
@@ -48,7 +48,7 @@ dependencies {
 //    compile project(':conductor-support')
 //    compile project(':conductor-rxlifecycle')
 
-    debugCompile rootProject.ext.leakCanary
-    releaseCompile rootProject.ext.leakCanaryNoOp
-    testCompile rootProject.ext.leakCanaryNoOp
+    debugCompile "com.squareup.leakcanary:leakcanary-android:$leakCanaryVersion"
+    releaseCompile "com.squareup.leakcanary:leakcanary-android-no-op:$leakCanaryVersion"
+    testCompile "com.squareup.leakcanary:leakcanary-android-no-op:$leakCanaryVersion"
 }

@@ -22,9 +22,9 @@ android {
 }
 
 dependencies {
-    compile rootProject.ext.rxJava
-    compile rootProject.ext.rxAndroid
-    compile rootProject.ext.rxLifecycle
+    compile "io.reactivex:rxjava:$rxJavaVersion"
+    compile "io.reactivex:rxandroid:$rxAndroidVersion"
+    compile "com.trello:rxlifecycle:$rxLifecycleVersion"
 
     compile project(':conductor')
 }

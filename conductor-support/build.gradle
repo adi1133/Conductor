@@ -22,7 +22,7 @@ android {
 }
 
 dependencies {
-    compile rootProject.ext.supportAppCompat
+    compile "com.android.support:appcompat-v7:$supportVersion"
     compile project(':conductor')
 }
 

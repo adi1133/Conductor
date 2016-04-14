@@ -36,10 +36,10 @@ configurations {
 }
 
 dependencies {
-    testCompile rootProject.ext.junit
-    testCompile rootProject.ext.roboelectric
+    testCompile "junit:junit:$junitVersion"
+    testCompile "org.robolectric:robolectric:$roboelectricVersion"
 
-    compile rootProject.ext.supportAnnotations
+    compile "com.android.support:support-annotations:$supportVersion"
 
     lintChecks project(path: ':conductor-lint', configuration: 'lintChecks')
 }
