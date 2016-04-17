@@ -3,12 +3,10 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'de.mobilej.unmock:UnMockPlugin:0.3.6'
     }
 }
 
 apply plugin: 'com.android.library'
-apply plugin: 'de.mobilej.unmock'
 
 android {
     compileSdkVersion 23
@@ -40,13 +38,6 @@ dependencies {
 
 }
 
-unMock {
-    downloadFrom 'https://oss.sonatype.org/content/groups/public/org/robolectric/android-all/4.3_r2-robolectric-0/android-all-4.3_r2-robolectric-0.jar'
-
-    keep "android.os.Bundle"
-    keep "android.os.BaseBundle"
-    keep "android.text.TextUtils"
-}
 
 task copyLintJar(type: Copy) {
     from(configurations.lintChecks) {
