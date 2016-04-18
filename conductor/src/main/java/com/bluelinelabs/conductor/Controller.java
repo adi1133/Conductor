@@ -67,6 +67,7 @@ public abstract class Controller {
     private String mInstanceId;
     private String mTargetInstanceId;
     private boolean mNeedsAttach;
+    private boolean mHasSavedViewState;
     private ControllerChangeHandler mOverriddenPushHandler;
     private ControllerChangeHandler mOverriddenPopHandler;
     private RetainViewMode mRetainViewMode = RetainViewMode.RELEASE_DETACH;
@@ -746,6 +747,8 @@ public abstract class Controller {
     }
 
     private void attach(@NonNull View view) {
+        mHasSavedViewState = false;
+
         for (LifecycleListener lifecycleListener : mLifecycleListeners) {
             lifecycleListener.preAttach(this, view);
         }
@@ -804,7 +807,7 @@ public abstract class Controller {
 
     private void removeViewReference() {
         if (mView != null) {
-            if (!mIsBeingDestroyed) {
+            if (!mIsBeingDestroyed && !mHasSavedViewState) {
                 saveViewState(mView);
             }
 
@@ -899,6 +902,8 @@ public abstract class Controller {
     }
 
     final void saveViewState(@NonNull View view) {
+        mHasSavedViewState = true;
+
         mViewState = new Bundle();
 
         SparseArray<Parcelable> hierarchyState = new SparseArray<>();
@@ -914,6 +919,10 @@ public abstract class Controller {
                 child.controller.saveViewState(child.controller.mView);
             }
         }
+
+        for (LifecycleListener lifecycleListener : mLifecycleListeners) {
+            lifecycleListener.onSaveViewState(this, mViewState);
+        }
     }
 
     final void restoreViewState(@NonNull View view) {
@@ -926,12 +935,20 @@ public abstract class Controller {
                     child.controller.restoreViewState(child.controller.mView);
                 }
             }
+
+            for (LifecycleListener lifecycleListener : mLifecycleListeners) {
+                lifecycleListener.onRestoreViewState(this, mViewState);
+            }
         }
     }
 
     final Bundle detachAndSaveInstanceState() {
         if (mAttached && mView != null) {
             detach(mView, mIsBeingDestroyed);
+        }
+
+        if (!mHasSavedViewState && mView != null) {
+            saveViewState(mView);
         }
 
         Bundle outState = new Bundle();
@@ -1089,6 +1106,9 @@ public abstract class Controller {
 
         public void onSaveInstanceState(@NonNull Controller controller, @NonNull Bundle outState) { }
         public void onRestoreInstanceState(@NonNull Controller controller, @NonNull Bundle savedInstanceState) { }
+
+        public void onSaveViewState(@NonNull Controller controller, @NonNull Bundle outState) { }
+        public void onRestoreViewState(@NonNull Controller controller, @NonNull Bundle savedViewState) { }
     }
 
 }
