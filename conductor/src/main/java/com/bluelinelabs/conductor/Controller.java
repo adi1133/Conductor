@@ -45,7 +45,7 @@ public abstract class Controller {
     private static final String KEY_TARGET_INSTANCE_ID = "Controller.target.instanceId";
     private static final String KEY_ARGS = "Controller.args";
     private static final String KEY_NEEDS_ATTACH = "Controller.needsAttach";
-    private static final String KEY_REQUESTED_PERMISSIONS = "Controller.childControllers";
+    private static final String KEY_REQUESTED_PERMISSIONS = "Controller.requestedPermissions";
     private static final String KEY_OVERRIDDEN_PUSH_HANDLER = "Controller.overriddenPushHandler";
     private static final String KEY_OVERRIDDEN_POP_HANDLER = "Controller.overriddenPopHandler";
     private static final String KEY_VIEW_STATE_HIERARCHY = "Controller.viewState.hierarchy";
@@ -71,6 +71,7 @@ public abstract class Controller {
     private ControllerChangeHandler mOverriddenPushHandler;
     private ControllerChangeHandler mOverriddenPopHandler;
     private RetainViewMode mRetainViewMode = RetainViewMode.RELEASE_DETACH;
+    private OnAttachStateChangeListener mOnAttachStateChangeListener;
     private final List<ChildControllerTransaction> mChildControllers = new ArrayList<>();
     private final List<LifecycleListener> mLifecycleListeners = new ArrayList<>();
     private final ArrayList<String> mRequestedPermissions = new ArrayList<>();
@@ -256,10 +257,11 @@ public abstract class Controller {
 
     /**
      * Returns the child Controller with the given instance id, if available.
-     *
      * @param instanceId The instance ID being searched for
      * @return The matching child Controller, if one exists
+     * @deprecated Use {@link #getChildController(String)} or {@link #getChildControllers()} instead.
      */
+    @Deprecated
     public final Controller getChildControllerWithInstanceId(String instanceId) {
         for (ControllerTransaction transaction : mChildControllers) {
             if (transaction.controller.getInstanceId().equals(instanceId)) {
@@ -270,17 +272,17 @@ public abstract class Controller {
     }
 
     /**
-     * Returns the a nested Controller with the given instance id, if available.
-     *
+     * Returns the Controller with the given instance id, if available.
+     * May return the controller itself or a matching descendant
      * @param instanceId The instance ID being searched for
      * @return The matching Controller, if one exists
      */
-    public final Controller getControllerWithInstanceId(String instanceId) {
-        if (getInstanceId().equals(instanceId))
+    final Controller findController(String instanceId) {
+        if (mInstanceId.equals(instanceId))
             return this;
 
         for (ControllerTransaction transaction : mChildControllers) {
-            Controller controllerWithId = transaction.controller.getControllerWithInstanceId(instanceId);
+            Controller controllerWithId = transaction.controller.findController(instanceId);
             if (controllerWithId != null)
                 return controllerWithId;
         }
@@ -810,13 +812,13 @@ public abstract class Controller {
                     container.removeView(child.controller.getView());
                 }
             }
+            
+            for (LifecycleListener lifecycleListener : mLifecycleListeners) {
+                lifecycleListener.postDetach(this, view);
+            }
 
             if (removeViewRef) {
                 removeViewReference();
-            }
-
-            for (LifecycleListener lifecycleListener : mLifecycleListeners) {
-                lifecycleListener.postDetach(this, view);
             }
         } else if (removeViewRef) {
             removeViewReference();
@@ -835,6 +837,7 @@ public abstract class Controller {
 
             onDestroyView(mView);
 
+            mView.removeOnAttachStateChangeListener(mOnAttachStateChangeListener);
             mView = null;
 
             for (LifecycleListener lifecycleListener : mLifecycleListeners) {
@@ -848,6 +851,11 @@ public abstract class Controller {
     }
 
     final View inflate(@NonNull ViewGroup parent) {
+        if (mView != null && mView.getParent() != null && mView.getParent() != parent) {
+            detach(mView, true);
+            removeViewReference();
+        }
+
         if (mView == null) {
             for (LifecycleListener lifecycleListener : mLifecycleListeners) {
                 lifecycleListener.preCreateView(this);
@@ -855,9 +863,13 @@ public abstract class Controller {
 
             mView = onCreateView(LayoutInflater.from(parent.getContext()), parent);
 
+            for (LifecycleListener lifecycleListener : mLifecycleListeners) {
+                lifecycleListener.postCreateView(this, mView);
+            }
+
             restoreViewState(mView);
 
-            mView.addOnAttachStateChangeListener(new OnAttachStateChangeListener() {
+            mOnAttachStateChangeListener = new OnAttachStateChangeListener() {
                 @Override
                 public void onViewAttachedToWindow(View v) {
                     if (v == mView) {
@@ -871,11 +883,8 @@ public abstract class Controller {
                     mViewIsAttached = false;
                     detach(v, true);
                 }
-            });
-
-            for (LifecycleListener lifecycleListener : mLifecycleListeners) {
-                lifecycleListener.postCreateView(this, mView);
-            }
+            };
+            mView.addOnAttachStateChangeListener(mOnAttachStateChangeListener);
         }
 
         return mView;
